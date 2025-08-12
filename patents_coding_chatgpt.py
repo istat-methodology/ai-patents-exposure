@@ -17,10 +17,9 @@ SAMPLE_SIZE = 100  # For quick testing, set to None to use the full dataset
 # -----------------------------------------------------------
 # File paths and configuration
 # -----------------------------------------------------------
-
 ISCO_PATH = "resources/classification/ISCO-08_structure_and_definitions.xlsx"
-PATENTS_PATH = "sample/patents_sample.xlsx"
-OUTPUT_PATH = "output/patents_classified_json.csv"
+PATENTS_SAMPLE_PATH = "sample/patents_sample.xlsx"
+OUTPUT_PATH = "output/patents_classified_chatgpt.csv"
 
 
 # -----------------------------------------------------------
@@ -216,7 +215,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Load ISCO codes and patents
 isco_df = load_isco_minor(ISCO_PATH)
-patents_df = pd.read_excel(PATENTS_PATH)
+patents_df = pd.read_excel(PATENTS_SAMPLE_PATH)
 # Drop unnecessary columns and reset index
 if "description" in patents_df.columns:
     patents_df = patents_df.drop("description", axis=1)
