@@ -12,7 +12,7 @@ INCLUDE_JUSTIFICATIONS = False  # ← toggle this to True when you want explanat
 MAX_SECONDARIES = 3  # cap secondary suggestions to keep JSON small
 
 MODEL = "gpt-5-mini"  # Currently available models "gpt-5", "gpt-5-mini", "gpt-5-nano"
-SAMPLE_SIZE = 100  # For quick testing, set to None to use the full dataset
+SAMPLE_SIZE = None  # For quick testing, set to None to use the full dataset
 
 # -----------------------------------------------------------
 # File paths and configuration
@@ -64,6 +64,7 @@ def load_isco_minor(path: str) -> pd.DataFrame:
 
 
 def generate_prompt_json(
+    title: str,
     abstract: str,
     isco_df: pd.DataFrame,
     include_justifications: bool,
@@ -74,32 +75,33 @@ def generate_prompt_json(
         {"code": str(row.Code), "title": row.Title} for _, row in isco_df.iterrows()
     ]
 
-    secondaries_note = ""
+    secondary_codes = ""
     if max_secondaries is not None and max_secondaries > 0:
-        secondaries_note = f"(at most {max_secondaries}, ordered by relevance)"
+        secondary_codes = f"(at most {max_secondaries}, ordered by relevance)"
     else:
-        secondaries_note = "(if any)"
+        secondary_codes = "(if any)"
 
     if include_justifications:
         fields = f"""
 Return ONLY a JSON object with the following fields:
 - primary_code: string, the best matching Minor Group code
-- primary_title: string, the corresponding title
 - primary_justification: short string explaining the choice
-- secondary_codes: array of strings {secondaries_note}
+- secondary_codes: array of strings {secondary_codes}
 - secondary_justifications: object mapping each secondary code to a short justification
 """
     else:
         fields = f"""
 Return ONLY a JSON object with the following fields:
 - primary_code: string, the best matching Minor Group code
-- primary_title: string, the corresponding title
-- secondary_codes: array of strings {secondaries_note}
+- secondary_codes: array of strings {secondary_codes}
 Do NOT include any justification fields. Keep the JSON minimal.
 """
 
     return f"""
 You are a labor market expert. Given the following patent abstract, classify it into the most appropriate ISCO-08 Minor Group.
+
+Patent title:
+\"\"\"{title}\"\"\"
 
 Patent abstract:
 \"\"\"{abstract}\"\"\"
@@ -174,6 +176,7 @@ def validate_codes(
 
 def classify_abstract_json(
     client,
+    title,
     abstract,
     isco_df,
     model="gpt-5",
@@ -183,7 +186,7 @@ def classify_abstract_json(
 ):
     """Send patent abstract to OpenAI API for classification (with optional prints)."""
     prompt = generate_prompt_json(
-        abstract, isco_df, include_justifications, max_secondaries
+        title, abstract, isco_df, include_justifications, max_secondaries
     )
 
     if PRINT_DEBUG and PRINT_PROMPT:
@@ -221,6 +224,7 @@ if "description" in patents_df.columns:
     patents_df = patents_df.drop("description", axis=1)
 
 # Remove semicolon from the abstracts (semicolon breaks prompt parsing)
+patents_df["title"] = patents_df["title"].str.replace(";", "", regex=False)
 patents_df["abstract"] = patents_df["abstract"].str.replace(";", "", regex=False)
 
 patents_df = patents_df.reset_index(drop=True)
@@ -242,6 +246,7 @@ for idx, row in patents_df.iterrows():
     print(f"🔍 Processing {label}")
     classification = classify_abstract_json(
         client,
+        row["title"],
         row["abstract"],
         isco_df,
         model=MODEL,
