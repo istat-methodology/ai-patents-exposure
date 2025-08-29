@@ -18,8 +18,8 @@ SAMPLE_SIZE = None  # For quick testing, set to None to use the full dataset
 # File paths and configuration
 # -----------------------------------------------------------
 ISCO_PATH = "resources/classification/ISCO-08_structure_and_definitions.xlsx"
-PATENTS_SAMPLE_PATH = "sample/patents_sample.xlsx"
-OUTPUT_PATH = "output/patents_classified_chatgpt.csv"
+PATENTS_SAMPLE_PATH = "sample/patents_sample_part3.xlsx"
+OUTPUT_PATH = "output/patents_classified_chatgpt_part3.csv"
 
 
 # -----------------------------------------------------------
